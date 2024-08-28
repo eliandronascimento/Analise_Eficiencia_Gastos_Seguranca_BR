@@ -1,15 +1,11 @@
 ---
-title: "DEA COM DADOS DE 2018 - MONOGRAFIA"
+title: "MONOGRAFIA"
 author: "Eliandro"
 date: "14/11/2019"
 output: word_document
 ---
 INSTALAR OS PACOTES:
 ```{r}
-
-rm(list=ls(all=TRUE))
-gc(reset = TRUE)
-
 install.packages("Benchmarking")
 install.packages("frontier")
 install.packages("readxl")
@@ -29,10 +25,10 @@ library(AER)
 
 ```
 
-IMPORTAR BASE DE DADOS: importa a base de dados e a nomeia como "SEGURANCA_2018".
+IMPORTAR BASE DE DADOS: importa a base de dados e a nomeia como "DADOS".
 ```{r}
 
-DADOS <- read_excel("~/DESENVOLVIMENTO_PESSOAL/ECONOMIA/PROJETO_MONOGRAFIA_GITHUB/DADOS.xlsx")
+DADOS <- read_excel("~.../DADOS.xlsx")
 View(DADOS)
 ```
 VARIÁVEIS
@@ -71,8 +67,6 @@ z6 = Renda Domiciliar média - Mensal
 
 Fixar a base de Dados
 ```{r}
-
-
 attach(DADOS)
 ```
 
@@ -80,8 +74,7 @@ MODELO DEA DE DOIS ESTÁGIOS
 
 1° ESTÁGIO
 
-Calcula o inverso dos ìndices de criminalidade devido a querer reduzir-las e calcula a
-variável x3(número de policiais):
+Calcula o inverso dos ìndices de criminalidade devido a querer reduzir-las e calcula a variável x3(número de policiais):
 ```{r}
 DADOS$ay1=1/(DADOS$y1)
 DADOS$ay2=1/(DADOS$y2)
@@ -213,8 +206,8 @@ summary(etobit_novo)
 8) Obtenha as estimativas para e para o desvio padrão do erro, ( e ).
 
 ```{r}
-#gamma_est<-coef(etobit_novo)
-#s_w<-sqrt(var(residuals(etobit_novo)))
+gamma_est<-coef(etobit_novo)
+s_w<-sqrt(var(residuals(etobit_novo)))
 
 ```
 
@@ -269,26 +262,7 @@ names(medias)<-cbind("Intercepto", "z1","logz2","z3", "z4","z5","logz6", "Desvio
 medias
 
 ```
-
-```
-
-
-```{r}
-
-
-```
-
-```
-
-
+Mostrar eficiências obtidas:
 ```{r}
 eff(BCC)
-```
-
-
-```
-
-
-```{r}
-
 ```
