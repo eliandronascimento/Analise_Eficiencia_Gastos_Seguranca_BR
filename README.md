@@ -10,21 +10,21 @@ Este projeto foi desenvolvido como meu Trabalho de Conclusão do Curso em 2019 p
 3. [Metodologia](#metodologia)
 4. [Dados Utilizados](#dados-utilizados)
 5. [Passo a Passo no RStudio](#passo-a-passo-no-rstudio)
-6. [Exemplos de Resultados e Gráficos](#exemplos-de-resultados-e-gráficos)
+6. [Análise dos Resultados](#análise-dos-resultados)
 
-## Introdução
+## 1. Introdução
 
 A eficiência na alocação dos recursos públicos é um tema central no debate sobre a administração pública, especialmente em países em desenvolvimento como o Brasil. O aumento da criminalidade e a necessidade de otimizar recursos financeiros tornam a análise da eficiência dos gastos públicos em segurança um tema relevante e urgente. Este projeto oferece uma análise abrangente da eficiência dos estados brasileiros em seus gastos com segurança pública, usando a Análise Envoltória de Dados (DEA) em Dois Estágios. Este método permite não apenas identificar os estados mais eficientes, mas também investigar o impacto de variáveis como área geográfica, taxa de analfabetismo, e taxa de desemprego na eficiência.
 
-## Objetivo
+## 2. Objetivo
 
 O objetivo deste projeto é analisar a eficiência técnica dos estados brasileiros em relação aos gastos com segurança pública no ano de 2017, utilizando a metodologia de Análise Envoltória de Dados (DEA). O projeto também visa verificar se variáveis não-discricionárias afetam o nível de eficiência, fornecendo insights valiosos para gestores públicos e formuladores de políticas.
 
-## Metodologia
+## 3. Metodologia
 
 A metodologia usada no projeto é a Análise Envoltória de Dados (DEA) em Dois Estágios, conforme desenvolvido por Simar e Wilson (2007). O DEA é uma técnica não-paramétrica que mede a eficiência relativa de unidades de tomada de decisão (DMUs) — neste caso, os estados brasileiros.
 
-## Dados Utilizados
+## 4. Dados Utilizados
 
 - **Fonte dos Dados**: 12º Anuário Brasileiro de Segurança Pública (2018) e Instituto Brasileiro de Geografia e Estatística (IBGE).
 - **Variáveis**:
@@ -70,119 +70,278 @@ Fonte: Elaboração própria
 
 2. **Regressão Truncada com Bootstrap**: Introduz variáveis não-discricionárias para modelar seu impacto na eficiência usando regressão truncada, complementada pela técnica bootstrap para obter intervalos de confiança mais robustos.
 
-## Passo a Passo no RStudio
+## 5. Passo a Passo no RStudio
 
 ### 1. Carregamento dos Dados
 
-Os dados são carregados a partir do arquivo `DADOS.xlsx` usando o pacote `readxl`. Esta etapa garante que todos os dados necessários para a análise estejam disponíveis no ambiente R.
+Os dados são carregados a partir do arquivo `DADOS.xlsx` usando o pacote `readxl`. Esta etapa garante que todos os dados necessários para a análise estejam disponíveis no ambiente R.P ara realizar a análise, é necessário instalar os pacotes R que serão utilizados ao longo do projeto. Isso pode ser feito com os seguintes comandos:
 
 ```r
-# Instalar os pacotes necessários:
+# Instalação dos Pacotes Necessários:
 install.packages("Benchmarking")
 install.packages("frontier")
 install.packages("readxl")
 install.packages("truncnorm")
 install.packages("AER")
 
-# Ativando os pacotes:
+# Ativação dos Pacotes:
 library(Benchmarking)
 library(frontier)
 library(readxl)
 library(truncnorm)
 library(AER))
 
-# Carregar os dados
+# Importação da Base de Dados
 dados <- read_excel("DADOS.xlsx")
 
 # Ver os dados:
 View(dados)
 ```
 
-### 2. Limpeza e Preparação dos Dados
+Fixar a Base de Dados
 
-A limpeza de dados é essencial para garantir a precisão da análise. Aqui, todos os dados foram organizados e deixados no arquivo "DAODS.xlsx"
+Fixamos a base de dados no ambiente de trabalho para facilitar a manipulação das variáveis:
 
-
-### 3. Implementação da Análise Envoltória de Dados (DEA)
-
- Os modelos DEA-CCR e DEA-BCC são aplicados para obter diferentes perspectivas da eficiência.
-
-```r
-
-# Modelo DEA-CCR (Constant Returns to Scale)
-dea_ccr <- dea(X = dados$gastos_per_capita, Y = dados[,c("inverso_taxa_MVI", "inverso_taxa_roubo_furto_veiculo")], RTS = "crs")
-
-# Modelo DEA-BCC (Variable Returns to Scale)
-dea_bcc <- dea(X = dados$gastos_per_capita, Y = dados[,c("inverso_taxa_MVI", "inverso_taxa_roubo_furto_veiculo")], RTS = "vrs")
-
-# Exibir resultados
-summary(dea_ccr)
-summary(dea_bcc)
+```{r}
+attach(DADOS)
 ```
 
-### 4. Análise dos Resultados de Eficiência
+Modelo DEA de Dois Estágios
 
-A partir dos resultados obtidos com o DEA, calculamos o percentual de redução necessário nos gastos para que os estados ineficientes alcancem a eficiência máxima.
+1° Estágio: Análise Envoltória de Dados (DEA)
 
-```r
-# Percentual de redução de gastos para estados ineficientes
-ineficiencia <- 1 - efficiency(dea_ccr)
-reducoes <- ineficiencia * 100  # Converte para percentual
+Neste estágio, calculamos o inverso das taxas de criminalidade (pois desejamos reduzi-las) e definimos as variáveis de insumo e produto.
 
-# Visualização dos resultados
-barplot(reducoes, main = "Redução Necessária de Gastos por Estado", xlab = "Estados", ylab = "Percentual de Redução (%)")
+Cálculo dos Inversos das Taxas de Criminalidade:
+```{r}
+DADOS$ay1=1/(DADOS$y1)
+DADOS$ay2=1/(DADOS$y2)
+DADOS$ay3=1/(DADOS$y3)
+DADOS$ay4=1/(DADOS$y4)
+DADOS$ay5=1/(DADOS$y5)
+
+#Fixar a base de dados atualizada
+attach(DADOS)
+```
+Definição de Insumos e Produtos
+
+Aqui, agrupamos as variáveis de insumo e produto:
+```{r}
+produtos<-cbind(ay1,ay2,ay3,ay4,ay5)
+insumos<- cbind(x)
+
+```
+**1) CALCULANDO O DEA**
+
+DEA-CCR ORIENTADO AOS INSUMOS: calcula a eficiência técnica orientada a insumos com a hipótese de retornos constantes de escala (“CRS”) e amazenar os dados obtidos no CCR:
+
+```{r}
+CCR <- dea(insumos,produtos, RTS="crs", ORIENTATION = "in", SLACK=TRUE)
+
 ```
 
-### 5. Inclusão de Variáveis Não-Discricionárias: Regressão Truncada com Bootstrap
+Mostrar Eficiências Obtidas no Modelo DEA-CCR:
+```{r}
+eff(CCR)
+```
+Análise Adicional do DEA-CCR:
+```{r}
+CCR$slack
+peers(CCR)
+lambda(CCR)
+```
 
-Realizamos uma regressão truncada para avaliar o impacto de variáveis não-discricionárias na eficiência. Utilizamos o pacote `truncreg` e aplicamos a técnica bootstrap para robustez dos resultados.
+DEA-BCC ORIENTADO AOS INSUMOS: calcula a eficiência técnica orientada a insumos  (“in”) com a hipótese de retornos variáveis de escala (“vrs”) e amazena os dados obtidos no objeto BCC: :
 
-```r
-library(truncreg)
+```{r}
+BCC <-dea(insumos,produtos, RTS="vrs", ORIENTATION = "in", SLACK=TRUE)
+```
 
-# Regressão truncada com variáveis não-discricionárias
-regressao <- truncreg(1 / efficiency(dea_ccr) ~ dados$area_geografica + dados$taxa_analfabetismo + dados$taxa_desemprego, data = dados)
+Mostrar Eficiências do Modelo DEA-BCC: 
+```{r}
+eff(BCC)
+```
+Análise Adicional do DEA-BCC:
+```{r}
+BCC$slack
+peers(BCC)
+lambda(BCC)
+```
 
-# Estimativa Bootstrap
-library(boot)
+Cálculo das Eficiências de Escala:
+```{r}
+Escala <- eff(CCR)/eff(BCC)
+Escala
+```
 
-# Função para o bootstrap
-bootstrap_function <- function(data, indices) {
-  d <- data[indices, ]  # Amostra de dados
-  fit <- truncreg(1 / efficiency(dea_ccr) ~ area_geografica + taxa_analfabetismo + taxa_desemprego, data = d)
-  return(coef(fit))
+Resultados Finais: Tabela com DEA-BCC, DEA-CCR e Eficiência de Escala
+
+Mostrar tabela com os resultados de DEA-BBC, DEA-CCR e Escala:
+```{r}
+cbind(eff(CCR), eff(BCC),Escala)
+```
+
+Ajuste de Variáveis para o 2º Estágio
+
+Calcula os logarítimos das variáveis z2(Área Geografica - km²) e z6( Renda Domiciliar média - Mensal:
+```{r}
+DADOS$logz2=log(DADOS$z2)
+DADOS$logz6=log(DADOS$z6)
+```
+
+2° ESTÁGIO: Regressão Tobit para Análise das Variáveis Ambientais
+
+Adição dos Escores de Eficiência DEA-BCC
+
+Os escores de eficiência do DEA-BCC são adicionados à base de dados:
+```{r}
+DADOS$theta<-eff(BCC)
+```
+
+**2)RETIRAR DMU’s EFICIENTES NO PASSO 1**
+
+Removemos as DMUs que foram eficientes no primeiro estágio para focar na análise das DMUs ineficientes:
+
+```{r}
+DADOS<-subset(DADOS,theta!=1)
+
+```
+
+**3) OBTÉM O INVERSO DOS ESCORES**
+
+Calcula o inverso dos escores de eficiência:
+```{r}
+DADOS$eta=1/DADOS$theta
+```
+
+**4) MODELO TOBIT**
+
+Utiliza o modelo Tobit (ou outro modelo equivalente) para regredir os escores de eficiência obtidos contra as variáveis ambientais, mas utilizando somente os registros das DMUs não eficientes, de acordo com a seguinte equação: , onde é o vetor de variáveis ambientais associado a DMU i, é o vetor de coeficientes a ser estimado e é o erro aleatório também associado a DMU i. Obtenha estimativas para , e para o desvio padrão de ;
+
+```{r}
+
+etobit<-tobit(eta~z1+logz2+z3+z4+z5+logz6, left=1, right=Inf,
+data=DADOS)
+DADOS$e<-residuals(etobit)
+s_e<-sqrt(var(DADOS$e))
+DADOS$predito<-fitted(etobit)
+summary(etobit)
+
+
+```
+**5) GERAÇÃO DE RESÍDUOS ARTIFICIAIS**
+
+Produza resíduos artificiais gerados a partir de uma distribuição normal truncada, com truncamento à esquerda8 em e com desvio padrão igual a , que foi estimado no passo 4:
+```{r}
+library(truncnorm)
+DADOS$e_artif<-rtruncnorm(1, a=1-DADOS$predito, b=Inf, mean = 0, sd = s_e)
+```
+
+**6) CÁLCULO DA VARIÁVEL ESTIMADA**
+
+Computa a variável segundo a equação, onde é o estimador para o parâmetro:
+```{r}
+DADOS$eta_est<-DADOS$predito+DADOS$e_artif
+
+```
+
+**7) NOVA REGRESSÃO TOBIT**
+
+Estime mais uma vez utilizando o modelo Tobit e as DMUs acima não eficientes, só que agora utilizando os valores obtidos da equação 8.24 como variável endógena, e as variáveis exógenas como variáveis explicativas , onde agora é o erro aleatório.:
+```{r}
+etobit_novo<-tobit(eta_est~z1+logz2+z3+z4+z5+logz6, left=1, right=Inf, data=DADOS)
+summary(etobit_novo)
+```
+**8) ESTIMATIVAS FINAIS**
+
+Obtenha as estimativas finais para os coeficientes e o desvio padrão do erro:
+```{r}
+gamma_est<-coef(etobit_novo)
+s_w<-sqrt(var(residuals(etobit_novo)))
+```
+
+**9) BOOTSTRAP PARA OBTENÇÃO DE INTERVALOS DE CONFIANÇA**
+
+Repita os passos 5, 6, 7 e 8 L9 vezes, de modo a obter a matriz. Inicialmente vamos definir a matriz G e atribuir os valores dos coeficientes e do desvio padrão a ela:
+```{r}
+L=5000
+set.seed(254487)
+#G<-cbind(rep(0,L),rep(0,L),rep(0,L),rep(0,L),rep(0,L),rep(0,L),rep(0,L))
+#G[1,L]<-cbind(t(gamma_est), s_w)
+
+G<-cbind(rep(0,L),rep(0,L),rep(0,L),rep(0,L),rep(0,L), rep(0,L),rep(0,L),
+rep(0,L))
+for (i in 1:L){
+ DADOS$e_artif<-rtruncnorm(1, a=1-DADOS$predito, b=Inf,
+mean = 0, sd = s_e)
+ DADOS$eta_est<-DADOS$predito+DADOS$e_artif
+ etobit_novo<-tobit(eta_est~z1+logz2+z3+z4+z5+logz6, left=1, right=Inf,
+data=DADOS)
+ gamma_est<-coef(etobit_novo)
+ s_w<-sqrt(var(residuals(etobit_novo)))
+ G[1,]<-cbind(t(gamma_est), s_w)
 }
+summary(etobit_novo)
+```
+**10) CÁLCULO DAS MÉDIAS E VARIÂNCIAS**
 
-# Executar o bootstrap
-results <- boot(data = dados, statistic = bootstrap_function, R = 5000)
-print(results)
+ Calculea as médias e variâncias de cada coluna G para construir intervalos de confiança para os parâmetros:
+```{r}
+medias<-rep(0,8)
+desvios<-rep(0,8)
+intervalo<-data.frame(cbind(rep(0,8),rep(0,8)))
+names(intervalo)<-cbind("Inferior", "Superior")
+rownames(intervalo)<-rbind("Intercepto", "z1","logz2","z3","z4","z5","logz6","Desvio do Erro")
+#rownames(intervalo)<-rbind("Intercepto", "az2", "az3","az4", "az7","az8","Desvio do Erro")
+
+for(i in 1:8){
+ medias[i]<-mean(G[,i])
+ desvios[i]<-sqrt(var(G[,i]))
+erro<- qnorm(0.95)*desvios[i]/sqrt(L)
+ intervalo[i,1]<- medias[i]-erro
+ intervalo[i,2]<- medias[i] + erro
+ }
+intervalo
 ```
 
-### 6. Visualização e Interpretação dos Resultados
+**11) EFEITOS DAS VARIÁVEIS AMBIENTAIS**
 
-Utilizamos o `ggplot2` para criar gráficos que ilustram os resultados da regressão e a distribuição dos escores de eficiência.
+Calcula a média de cada coluna para obter a estimativa dos efeitos das variáveis ambientais sobre a eficiência das DMUs:
+```{r}
+names(medias)<-cbind("Intercepto", "z1","logz2","z3", "z4","z5","logz6", "Desvio do Erro")
+medias
 
-```r
-library(ggplot2)
-
-# Gráfico dos resultados da regressão
-ggplot(dados, aes(x = taxa_analfabetismo, y = efficiency(dea_ccr))) +
-  geom_point() +
-  geom_smooth(method = "lm") +
-  labs(title = "Impacto da Taxa de Analfabetismo na Eficiência", x = "Taxa de Analfabetismo (%)", y = "Eficiência")
 ```
+Mostra eficiências obtidas:
+```{r}
+eff(BCC)
+```
+## 6. Análise dos Resultados
 
-## Exemplos de Resultados e Gráficos
+Esta seção apresenta a análise das eficiências técnica (ET), técnica pura (ETP) e de escala (EE) das 26 Unidades Federativas (UFs) analisadas, excluindo Roraima por falta de dados. Utilizamos a metodologia DEA-BCC e DEA-CCR orientadas a insumos no primeiro estágio, e o método de Simar e Wilson (2007) no segundo estágio.
 
-### Resultados de Eficiência Técnica
+**Resultados do Primeiro Estágio**
 
-Os resultados mostram que apenas cinco estados (Paraíba, Maranhão, Rio Grande do Norte, Santa Catarina e São Paulo) atingiram a eficiência técnica máxima. Estados ineficientes, como o Rio de Janeiro, precisariam reduzir seus gastos com segurança em até 80% para atingir a fronteira de eficiência.
+Os resultados dos modelos DEA-BCC e DEA-CCR para as 26 UFs, incluindo a eficiência de escala e a estatística descritiva, são apresentados na tabela abaixo:
 
-### Impacto das Variáveis Não-Discricionárias
 
-Os gráficos gerados mostram que a área geográfica tem um impacto positivo na eficiência, enquanto a taxa de desemprego está associada à ineficiência. Estes insights são valiosos para formuladores de políticas que buscam alocar recursos de maneira mais eficaz.
+**Estatísticas Descritivas:**
+- Média: ET = 0,6195, ETP = 0,7198, EE = 0,8485
+- Desvio Padrão: ET = 0,2429, ETP = 0,2158, EE = 0,1536
+- Coeficiente de Variação: ET = 39,22%, ETP = 29,98%, EE = 18,10%
 
-   ```
+**Quartis:**
+ - 1º Quartil: ET = 0,4485, ETP = 0,5757, EE = 0,7609
+ - 2º Quartil (Mediana): ET = 0,5717, ETP = 0,6921, EE = 0,8908 
+ - 3º Quartil: ET = 0,7284, ETP = 0,9641, EE = 0,9861
+
+
+**Observações:**
+- 5 UFs estão na fronteira de eficiência: Paraíba, Maranhão, Rio Grande do Norte, Santa Catarina e São Paulo.
+- Rio de Janeiro apresentou o menor nível de ET (0,2177).
+- Mato Grosso foi ineficiente com retornos constantes de escala, mas eficiente com retornos variáveis.
+- Minas Gerais, Paraná, Rondônia e Tocantins apresentaram escores de ET e ETP muito próximos, indicando ineficiências técnicas na gestão dos serviços.
+
 
 ## Referências
 
