@@ -72,7 +72,7 @@ Fonte: Elaboração própria
 
 ## 5. Passo a Passo no RStudio
 
-### 1. Carregamento dos Dados
+### Carregamento dos Dados
 
 Os dados são carregados a partir do arquivo `DADOS.xlsx` usando o pacote `readxl`. Esta etapa garante que todos os dados necessários para a análise estejam disponíveis no ambiente R.P ara realizar a análise, é necessário instalar os pacotes R que serão utilizados ao longo do projeto. Isso pode ser feito com os seguintes comandos:
 
